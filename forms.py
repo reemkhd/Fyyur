@@ -1,7 +1,8 @@
 from datetime import datetime
 from flask_wtf import Form
 from wtforms import StringField, SelectField, SelectMultipleField, DateTimeField
-from wtforms.validators import DataRequired, AnyOf, URL
+from wtforms.validators import DataRequired, AnyOf, URL, InputRequired
+
 
 class ShowForm(Form):
     artist_id = StringField(
@@ -15,6 +16,7 @@ class ShowForm(Form):
         validators=[DataRequired()],
         default= datetime.today()
     )
+
 
 class VenueForm(Form):
     name = StringField(
@@ -86,7 +88,7 @@ class VenueForm(Form):
         'phone'
     )
     image_link = StringField(
-        'image_link'
+        'image_link', validators=[URL()]
     )
     genres = SelectMultipleField(
         # TODO implement enum restriction
@@ -115,6 +117,19 @@ class VenueForm(Form):
     )
     facebook_link = StringField(
         'facebook_link', validators=[URL()]
+    )
+    seeking_talent = SelectField(
+        'seeking_talent', 
+        choices=[
+            ('Yes', 'Yes'),
+            ('No', 'No')
+        ]
+    )
+    seeking_description = StringField(
+        'seeking_description'
+    )
+    website = StringField(
+        'website', validators=[URL()]
     )
 
 class ArtistForm(Form):
@@ -185,7 +200,7 @@ class ArtistForm(Form):
         'phone'
     )
     image_link = StringField(
-        'image_link'
+        'image_link', validators=[URL()]
     )
     genres = SelectMultipleField(
         # TODO implement enum restriction
@@ -216,5 +231,29 @@ class ArtistForm(Form):
         # TODO implement enum restriction
         'facebook_link', validators=[URL()]
     )
+    seeking_talent = SelectField(
+        'seeking_talent', 
+        choices=[
+            ('Yes', 'Yes'),
+            ('No', 'No')
+        ]
+    )
+    seeking_description = StringField(
+        'seeking_description'
+    )
+    website = StringField(
+        'website', validators=[URL()]
+    )
 
 # TODO IMPLEMENT NEW ARTIST FORM AND NEW SHOW FORM
+
+class NewArtist(Form):
+    artist_id = StringField(
+        'artist_id'
+    )
+
+class NewShow(Form):
+    artist_id = StringField(
+        'artist_id'
+    )
+
