@@ -141,9 +141,12 @@ def index():
 def venues():
   # to take unique city with state
   all_city_state = Venue.query.with_entities(Venue.city, Venue.state).distinct()
+  # initialize a list of unique city with state
   data=[]
   for city_state in all_city_state:
+    # initialize a list of the data about corresponding unique city with state
     venue_data =[]
+    # go through each unique city & state
     for venue in Venue.query.filter_by(state=city_state.state).filter_by(city=city_state.city).all():
       venue_data.append({
         'id':venue.id,
@@ -159,9 +162,10 @@ def venues():
 
 @app.route('/venues/search', methods=['POST'])
 def search_venues():
+  # take the search term from the form
   search_term = request.form.get('search_term', '')
+  # ilike to be insensitive case, and % any leters before or after the search term
   all_venues = Venue.query.filter(Venue.name.ilike("%" + search_term + "%")).all()
-
   data = []
   count=0
   for venue in all_venues:
@@ -172,7 +176,7 @@ def search_venues():
        "name": venue.name,
        "num_upcoming_shows": len(Show.query.join(Venue).filter(Show.venue_id==venue.id).filter(Show.start_time>datetime.datetime.now()).all())
     })
-
+  # the result of search save here
   response={
     "count": count,
     "data": data
@@ -181,18 +185,19 @@ def search_venues():
 
 @app.route('/venues/<int:venue_id>')
 def show_venue(venue_id):
+  # take row that we need to represent it
   venue_data = Venue.query.get(venue_id)
   # error massage when wrong ID
   if not venue_data:
     abort(500)
   else:
-    # to show the mluti
+    # to show the mluti choices
     for genre in venue_data.genres:
       gen = [genre.name]
-
-    # to take past shows data, we must compare the show time with current time
+    # initialize a list to put the past shows
     past_shows = []
     # join Show with Artist to take artist data with corresponding show
+    # to take past shows data, we must compare the show time with current time
     for show in Show.query.join(Artist).filter(Show.venue_id==venue_id).filter(Show.start_time<datetime.datetime.now()).all():
       past_shows.append({
         "artist_id": show.artist_id,
@@ -200,9 +205,9 @@ def show_venue(venue_id):
         "artist_image_link": show.artist.image_link,
         "start_time": show.start_time
       })
-
-    # to take upcoming shows data, we must compare the show time with current time
+    # initialize a list to upcoming the past shows
     upcoming_shows = []
+    # to take upcoming shows data, we must compare the show time with current time
     for show in Show.query.join(Artist).filter(Show.venue_id==venue_id).filter(Show.start_time>datetime.datetime.now()).all():
       upcoming_shows.append({
         "artist_id": show.artist_id,
@@ -271,7 +276,7 @@ def create_venue_submission():
       seeking_talent=seeking_talent, 
       seeking_description=seeking_description, 
       website=website)
-    # we can do this because it may be a multi choice, not one
+    # we do this because it may be a multi choice, not one
     new_genres = Genres(name=genres)
     venue.genres.append(new_genres)
     # add the record to Venue table
@@ -367,7 +372,8 @@ def show_artist(artist_id):
       gen = [genre.name]
 
     past_shows = []
-     # join Show with Artist to take artist data with corresponding show
+    # join Show with Artist to take artist data with corresponding show
+    # to take past shows data, we must compare the show time with current time
     for show in Show.query.join(Venue).filter(Show.artist_id==artist_id).filter(Show.start_time<datetime.datetime.now()).all():
       past_shows.append({
         "venue_id": show.venue_id,
