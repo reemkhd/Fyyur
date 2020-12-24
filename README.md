@@ -16,6 +16,7 @@ This app is nearly complete. It is only missing one thing… real data! While th
 * searching for venues and artists.
 * learning more about a specific artist or venue.
 
+/Users/reem/Desktop/Screen Shot 2020-12-24 at 1.09.20 PM.png
 
 
 ## Tech Stack (Dependencies)
