@@ -16,8 +16,7 @@ This app is nearly complete. It is only missing one thing… real data! While th
 * searching for venues and artists.
 * learning more about a specific artist or venue.
 
-/Users/reem/Desktop/Screen Shot 2020-12-24 at 1.09.20 PM.png
-
+![alt text](<https://i.ibb.co/mRTrwBk/Screen-Shot-2020-12-24-at-1-09-20-PM.png>)
 
 ## Tech Stack (Dependencies)
 Our tech stack will include the following:
@@ -40,11 +39,11 @@ Our tech stack will include the following:
   ├── forms.py *** Your forms
   ├── requirements.txt *** The dependencies we need to install with "pip3 install -r requirements.txt"
   ├── static
-  │   ├── css 
-  │   ├── font
-  │   ├── ico
-  │   ├── img
-  │   └── js
+  │   ├── css 
+  │   ├── font
+  │   ├── ico
+  │   ├── img
+  │   └── js
   └── templates
       ├── errors
       ├── forms
