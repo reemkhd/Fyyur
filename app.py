@@ -5,7 +5,7 @@
 import json
 import dateutil.parser
 import babel
-from flask import Flask, render_template, request, Response, flash, redirect, url_for, abort, jsonify
+from flask import Flask, render_template, request, Response, flash, redirect, url_for, abort
 from flask_moment import Moment
 from flask_sqlalchemy import SQLAlchemy
 import logging
@@ -14,7 +14,6 @@ from flask_wtf import Form
 from forms import *
 from flask_migrate import Migrate
 from sqlalchemy import DateTime, func
-import re
 import datetime
 #----------------------------------------------------------------------------#
 # App Config.
@@ -32,15 +31,16 @@ migrate = Migrate(app, db)
 
 class Genres(db.Model):
     __tablename__ = 'Genres'
-
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(120))
 
+# For many-to-many relationship between Venue & Genre
 genres_venue = db.Table('genres_venue',
     db.Column('genres_id', db.Integer, db.ForeignKey('Genres.id'), primary_key=True),
     db.Column('venue_id', db.Integer, db.ForeignKey('Venue.id'), primary_key=True)
 )
 
+# For Many-to-Many relationship between Artist & Genre
 genres_artist = db.Table('genres_artist',
     db.Column('genres_id', db.Integer, db.ForeignKey('Genres.id'), primary_key=True),
     db.Column('artist_id', db.Integer, db.ForeignKey('Artist.id'), primary_key=True)
@@ -61,8 +61,10 @@ class Venue(db.Model):
     seeking_talent = db.Column(db.String(120))
     seeking_description = db.Column(db.String(120))
 
+    #to connect with Genres table
     genres = db.relationship('Genres', secondary=genres_venue, lazy='subquery',
         backref=db.backref('venue', lazy=True))
+    #to connect with Show table
     shows = db.relationship('Show', backref='venue')
     def __repr__(self):
       return f'<Venue {self.id}, {self.name}>'
@@ -80,9 +82,10 @@ class Artist(db.Model):
     website = db.Column(db.String(120))
     seeking_talent = db.Column(db.String(120))
     seeking_description = db.Column(db.String(120))
-
+    #to connect with Genres table
     genres = db.relationship('Genres', secondary=genres_artist, lazy='subquery',
             backref=db.backref('artist', lazy=True))
+    #to connect with Show table
     shows = db.relationship('Show', backref='artist')
     def __repr__(self):
       return f'<Artist {self.id}, {self.name}>'
@@ -93,6 +96,7 @@ class Show(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     start_time = db.Column(DateTime, nullable=False)
+    # because it is one-to-many relationship, we need for just foreign key, not table
     venue_id = db.Column(db.Integer, db.ForeignKey('Venue.id'))
     artist_id = db.Column(db.Integer, db.ForeignKey('Artist.id'))
     def __repr__(self):
@@ -110,7 +114,6 @@ def format_datetime(value, format='medium'):
         format = "EE MM, dd, y h:mma"
     return babel.dates.format_datetime(value, format)
     '''
-
 #The code above is not working with me , this insted:
 def format_datetime(date, format='%x %X'):
     # check whether the value is a datetime object
@@ -136,6 +139,7 @@ def index():
 
 @app.route('/venues')
 def venues():
+  # to take unique city with state
   all_city_state = Venue.query.with_entities(Venue.city, Venue.state).distinct()
   data=[]
   for city_state in all_city_state:
@@ -161,6 +165,7 @@ def search_venues():
   data = []
   count=0
   for venue in all_venues:
+    # to calc the no. of results
     count+=1
     data.append({
        "id": venue.id,
@@ -177,14 +182,17 @@ def search_venues():
 @app.route('/venues/<int:venue_id>')
 def show_venue(venue_id):
   venue_data = Venue.query.get(venue_id)
-
+  # error massage when wrong ID
   if not venue_data:
     abort(500)
   else:
+    # to show the mluti
     for genre in venue_data.genres:
       gen = [genre.name]
 
+    # to take past shows data, we must compare the show time with current time
     past_shows = []
+    # join Show with Artist to take artist data with corresponding show
     for show in Show.query.join(Artist).filter(Show.venue_id==venue_id).filter(Show.start_time<datetime.datetime.now()).all():
       past_shows.append({
         "artist_id": show.artist_id,
@@ -193,6 +201,7 @@ def show_venue(venue_id):
         "start_time": show.start_time
       })
 
+    # to take upcoming shows data, we must compare the show time with current time
     upcoming_shows = []
     for show in Show.query.join(Artist).filter(Show.venue_id==venue_id).filter(Show.start_time>datetime.datetime.now()).all():
       upcoming_shows.append({
@@ -234,12 +243,13 @@ def create_venue_form():
 @app.route('/venues/create', methods=['POST'])
 def create_venue_submission():
   form = VenueForm()
+  # take data from the form
   name = form.name.data
   city = form.city.data
   stat = form.state.data
   add = form.address.data
   phone = form.phone.data
-  phone = re.sub('\D', '', phone)
+  phone = phone
   genres = form.genres.data
   image_link = form.image_link.data
   facebook_link = form.facebook_link.data
@@ -248,8 +258,8 @@ def create_venue_submission():
   website = form.website.data
 
   error=False
-
   try:
+    # send data to the class
     venue = Venue(
       name=name, 
       city=city, 
@@ -261,8 +271,10 @@ def create_venue_submission():
       seeking_talent=seeking_talent, 
       seeking_description=seeking_description, 
       website=website)
+    # we can do this because it may be a multi choice, not one
     new_genres = Genres(name=genres)
     venue.genres.append(new_genres)
+    # add the record to Venue table
     db.session.add(venue)
     db.session.commit()
   except():
@@ -271,17 +283,22 @@ def create_venue_submission():
   finally:
         db.session.close()
   if error:
+    # if error occur, error message pop up
     flash('An error occurred. Venue ' + name + ' could not be listed.')
   if not error:
+    # if success, success message pop up
     flash('Venue ' + request.form['name'] + ' was successfully listed!')
   return render_template('pages/home.html')
 
 @app.route('/venues/<venue_id>/delete', methods=['DELETE'])
 def delete_venue(venue_id):
+  # take the id thats want to delete
   venue = Venue.query.get(venue_id)
   error = False
+  # take name to show the message before delete the entire row
   venue_name = venue.name
   try:
+    # delete the row from Venue table
     db.session.delete(venue)
     db.session.commit()
   except:
@@ -290,8 +307,10 @@ def delete_venue(venue_id):
   finally:
     db.session.close()
   if error:
+    # if error occur, error message pop up
     flash('An error occurred deleting venue' + venue_name)
   else:
+    # if success, success message pop up
     flash('Successfully removed venue ' + venue_name)
   return redirect(url_for('venues'))
 
@@ -300,8 +319,10 @@ def delete_venue(venue_id):
 #  ----------------------------------------------------------------
 @app.route('/artists')
 def artists():
+  # take all rows from Artist table
   artists = Artist.query.all()
   data=[]
+  # fill the list from Artist data
   for artist in artists:
     data.append({
       'id':artist.id,
@@ -312,12 +333,15 @@ def artists():
 @app.route('/artists/search', methods=['POST'])
 def search_artists():
   search_term = request.form.get('search_term', '')
+  # ilike to be insensitive case, and % any leters before or after the search term
   all_artists = Artist.query.filter(Artist.name.ilike("%" + search_term + "%")).all()
 
   data = []
   count=0
   for artist in all_artists:
+    # to calc the no. of results
     count+=1
+    # to put Artists data in a list
     data.append({
        "id": artist.id,
        "name": artist.name,
@@ -332,15 +356,18 @@ def search_artists():
 
 @app.route('/artists/<int:artist_id>')
 def show_artist(artist_id):
+  # take row that we need to represent it
   artist_data = Artist.query.get(artist_id)
-
+  # error massage when wrong ID
   if not artist_data:
     abort(500)
   else:
+    # we use for since the geners may be a multi choice
     for genre in artist_data.genres:
       gen = [genre.name]
 
     past_shows = []
+     # join Show with Artist to take artist data with corresponding show
     for show in Show.query.join(Venue).filter(Show.artist_id==artist_id).filter(Show.start_time<datetime.datetime.now()).all():
       past_shows.append({
         "venue_id": show.venue_id,
@@ -382,9 +409,11 @@ def show_artist(artist_id):
 #  ----------------------------------------------------------------
 @app.route('/artists/<int:artist_id>/edit', methods=['GET'])
 def edit_artist(artist_id):
+  # take row that we need to edit it
   data = Artist.query.get(artist_id)
+  # fill the form with old data
   form = ArtistForm(obj=data)
-
+  # we use for since the geners may be a multi choice
   for genre in data.genres:
       gen = [genre.name]
 
@@ -406,9 +435,11 @@ def edit_artist(artist_id):
 @app.route('/artists/<int:artist_id>/edit', methods=['POST'])
 def edit_artist_submission(artist_id):
   form = ArtistForm()
+  # take row that we need to edit it
   artist = Artist.query.get(artist_id)
   error = False
   try:
+    # start to edit the data after take them from the form
     artist.name=form.name.data
     genres=form.genres.data
     artist.city=form.city.data
@@ -429,15 +460,20 @@ def edit_artist_submission(artist_id):
   finally:
         db.session.close()
   if error: 
+    # if error occur, error message pop up
     flash('An error occurred. Artist could not be updated.')
   if not error: 
+    # if success, success message pop up
     flash('Artist was successfully updated!')
   return redirect(url_for('show_artist', artist_id=artist_id))
 
 @app.route('/venues/<int:venue_id>/edit', methods=['GET'])
 def edit_venue(venue_id):
+  # take row that we need to edit it
   data = Venue.query.get(venue_id)
+  # fill the form with old data
   form = VenueForm(obj=data)
+  # we use for since the geners may be a multi choice
   for genre in data.genres:
       gen = [genre.name]
   venue={
@@ -459,9 +495,11 @@ def edit_venue(venue_id):
 @app.route('/venues/<int:venue_id>/edit', methods=['POST'])
 def edit_venue_submission(venue_id):
   form = VenueForm()
+  # take row that we need to edit it
   venue = Venue.query.get(venue_id)
   error = False
   try:
+    # start to edit the data after take them from the form
     venue.name=form.name.data
     genres=form.genres.data
     venue.city=form.city.data
@@ -483,8 +521,10 @@ def edit_venue_submission(venue_id):
   finally:
         db.session.close()
   if error: 
+    # if error occur, error message pop up
     flash('An error occurred. Venue could not be updated.')
   if not error: 
+    # if success, success message pop up
     flash('Venue was successfully updated!')
   return redirect(url_for('show_venue', venue_id=venue_id))
 
@@ -499,12 +539,12 @@ def create_artist_form():
 @app.route('/artists/create', methods=['POST'])
 def create_artist_submission():
   form = ArtistForm()
-
+  # take data from the form
   name = form.name.data
   city = form.city.data
   stat = form.state.data
   phone = form.phone.data
-  phone = re.sub('\D', '', phone)
+  phone = phone
   genres = form.genres.data
   image_link = form.image_link.data
   facebook_link = form.facebook_link.data
@@ -515,6 +555,7 @@ def create_artist_submission():
   error=False
 
   try:
+    # send data to Artist class
     artist = Artist(
       name=name, 
       city=city, 
@@ -526,10 +567,10 @@ def create_artist_submission():
       seeking_talent=seeking_talent, 
       seeking_description=seeking_description
       )
-
+    # we can do this because it may be a multi choice, not one
     new_genres = Genres(name=genres)
     artist.genres.append(new_genres)
-
+    # add record to the table
     db.session.add(artist)
     db.session.commit()
   except():
@@ -538,8 +579,10 @@ def create_artist_submission():
   finally:
         db.session.close()
   if error:
+    # if error occur, error message pop up
     flash('An error occurred. Artist ' + data.name + ' could not be listed.')
   if not error:
+    # if success, success message pop up
     flash('Artist ' + request.form['name'] + ' was successfully listed!')
   return render_template('pages/home.html')
 
@@ -548,10 +591,13 @@ def create_artist_submission():
 
 @app.route('/artists/<artist_id>/delete', methods=['DELETE'])
 def delete_artist(artist_id):
+  # take the id thats want to delete
   artist = Artist.query.get(artist_id)
   error = False
+  # take name to show the message before delete the entire row
   artist_name = artist.name
   try:
+    # delete the row from Artist table
     db.session.delete(artist)
     db.session.commit()
   except:
@@ -560,8 +606,10 @@ def delete_artist(artist_id):
   finally:
     db.session.close()
   if error:
+    # if error occur, error message pop up
     flash('An error occurred deleting artist' + artist_name)
-  else:
+  if not error:
+    # if success, success message pop up
     flash('Successfully removed artist ' + artist_name)
   return redirect(url_for('artists'))
 
@@ -571,9 +619,10 @@ def delete_artist(artist_id):
 
 @app.route('/shows')
 def shows():
-  shows = Show.query.all()
-  data=[]
-
+  # to list the shows
+  data = []
+  # to get Venue and Artist corresponding to each Show
+  shows = Show.query.join(Venue).join(Artist).all()
   for show in shows:
     data.append({
       "venue_id": show.venue.id,
@@ -594,13 +643,14 @@ def create_shows():
 @app.route('/shows/create', methods=['POST'])
 def create_show_submission():
   form = ShowForm()
-
+  # take the data from the form
   artist_id = form.artist_id.data
   venue_id = form.venue_id.data
   start_time = form.start_time.data
 
   error=False
   try:
+    # to add the record to show table
     show = Show(
       artist_id=artist_id, 
       venue_id=venue_id, 
@@ -613,8 +663,10 @@ def create_show_submission():
   finally:
         db.session.close()
   if error:
+    # if error occur, error message pop up
     flash('An error occurred. Show could not be listed.')
   if not error:
+    # if success, success message pop up
     flash('Show was successfully listed!')
   return render_template('pages/home.html')
 
