@@ -60,7 +60,7 @@ class Venue(db.Model):
     image_link = db.Column(db.String(500))
     facebook_link = db.Column(db.String(120))
     website = db.Column(db.String(120))
-    seeking_talent = db.Column(db.Boolean)
+    seeking_talent = db.Column(db.String(120))
     seeking_description = db.Column(db.String(120))
 
     #to connect with Genres table via association table
@@ -82,7 +82,7 @@ class Artist(db.Model):
     image_link = db.Column(db.String(500))
     facebook_link = db.Column(db.String(120))
     website = db.Column(db.String(120))
-    seeking_talent = db.Column(db.Boolean)
+    seeking_talent = db.Column(db.String(120))
     seeking_description = db.Column(db.String(120))
     #to connect with Genres table via association table
     genres = db.relationship('Genres', secondary=genres_artist, lazy='subquery',
@@ -250,6 +250,7 @@ def create_venue_form():
 def create_venue_submission():
   form = VenueForm()
   # take data from the form
+  seek_talent = form.seeking_talent.data
   name = form.name.data
   city = form.city.data
   stat = form.state.data
@@ -259,7 +260,7 @@ def create_venue_submission():
   genres = form.genres.data
   image_link = form.image_link.data
   facebook_link = form.facebook_link.data
-  seeking_talent = True if form.seeking_talent.data == 'Yes' else False
+  seeking_talent = True if seek_talent == 'Yes' else False
   seeking_description = form.seeking_description.data
   website = form.website.data
 
@@ -547,6 +548,7 @@ def create_artist_form():
 def create_artist_submission():
   form = ArtistForm()
   # take data from the form
+  seek_talent = form.seeking_talent.data
   name = form.name.data
   city = form.city.data
   stat = form.state.data
@@ -555,7 +557,7 @@ def create_artist_submission():
   genres = form.genres.data
   image_link = form.image_link.data
   facebook_link = form.facebook_link.data
-  seeking_talent = True if form.seeking_talent.data == 'Yes' else False
+  seeking_talent = True if seek_talent == 'Yes' else False
   seeking_description = form.seeking_description.data
   website = form.website.data
 
