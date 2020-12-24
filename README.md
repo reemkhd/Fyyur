@@ -17,9 +17,8 @@ This app is nearly complete. It is only missing one thing… real data! While th
 * learning more about a specific artist or venue.
 
 
-## Tech Stack (Dependencies)
 
-### 1. Backend Dependencies
+## Tech Stack (Dependencies)
 Our tech stack will include the following:
  * **virtualenv** as a tool to create isolated Python environments
  * **SQLAlchemy ORM** to be our ORM library of choice
@@ -74,7 +73,6 @@ pip install -r requirements.txt
 
 
 3. **Connect your local database:**
-in config.py 
 ```
 SQLALCHEMY_DATABASE_URI = '<your database>'
 ```
