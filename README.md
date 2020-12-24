@@ -51,7 +51,6 @@ Our tech stack will include the following:
       └── pages
   ```
 
-Overall:
 * Models are located in the `MODELS` section of `app.py`.
 * Controllers are also located in `app.py`.
 * The web frontend is located in `templates/`, which builds static assets deployed to the web server at `static/`.
