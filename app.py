@@ -35,12 +35,14 @@ class Genres(db.Model):
     name = db.Column(db.String(120))
 
 # For many-to-many relationship between Venue & Genre
+# the Venue table is the parent since it is more important
 genres_venue = db.Table('genres_venue',
     db.Column('genres_id', db.Integer, db.ForeignKey('Genres.id'), primary_key=True),
     db.Column('venue_id', db.Integer, db.ForeignKey('Venue.id'), primary_key=True)
 )
 
-# For Many-to-Many relationship between Artist & Genre
+# For many-to-many relationship between Artist & Genre
+# the Artist table is the parent since it is more important
 genres_artist = db.Table('genres_artist',
     db.Column('genres_id', db.Integer, db.ForeignKey('Genres.id'), primary_key=True),
     db.Column('artist_id', db.Integer, db.ForeignKey('Artist.id'), primary_key=True)
@@ -58,13 +60,13 @@ class Venue(db.Model):
     image_link = db.Column(db.String(500))
     facebook_link = db.Column(db.String(120))
     website = db.Column(db.String(120))
-    seeking_talent = db.Column(db.String(120))
+    seeking_talent = db.Column(db.Boolean)
     seeking_description = db.Column(db.String(120))
 
-    #to connect with Genres table
+    #to connect with Genres table via association table
     genres = db.relationship('Genres', secondary=genres_venue, lazy='subquery',
         backref=db.backref('venue', lazy=True))
-    #to connect with Show table
+    #to connect with Show table via association table
     shows = db.relationship('Show', backref='venue')
     def __repr__(self):
       return f'<Venue {self.id}, {self.name}>'
@@ -80,12 +82,12 @@ class Artist(db.Model):
     image_link = db.Column(db.String(500))
     facebook_link = db.Column(db.String(120))
     website = db.Column(db.String(120))
-    seeking_talent = db.Column(db.String(120))
+    seeking_talent = db.Column(db.Boolean)
     seeking_description = db.Column(db.String(120))
-    #to connect with Genres table
+    #to connect with Genres table via association table
     genres = db.relationship('Genres', secondary=genres_artist, lazy='subquery',
             backref=db.backref('artist', lazy=True))
-    #to connect with Show table
+    #to connect with Show table via association table
     shows = db.relationship('Show', backref='artist')
     def __repr__(self):
       return f'<Artist {self.id}, {self.name}>'
@@ -136,7 +138,6 @@ def index():
 
 #  Venues
 #  ----------------------------------------------------------------
-
 @app.route('/venues')
 def venues():
   # to take unique city with state
@@ -144,14 +145,14 @@ def venues():
   # initialize a list of unique city with state
   data=[]
   for city_state in all_city_state:
-    # initialize a list of the data about corresponding unique city with state
-    venue_data =[]
+  # initialize a list of the data about corresponding unique city with state
+    venue_data=[]
     # go through each unique city & state
-    for venue in Venue.query.filter_by(state=city_state.state).filter_by(city=city_state.city).all():
+    for ven in Venue.query.filter_by(city=city_state.city).filter_by(state=city_state.state).all():
       venue_data.append({
-        'id':venue.id,
-        'name':venue.name,
-        'num_upcoming_shows': len(Show.query.join(Venue).filter(Show.venue_id==venue.id).filter(Show.start_time>datetime.datetime.now()).all())
+        'id': ven.id,
+        'name': ven.name,
+        'num_upcoming_shows': Show.query.filter_by(venue_id=ven.id).filter(Show.start_time>datetime.datetime.now()).count()
       })
     data.append({
       'city':city_state.city,
@@ -165,16 +166,16 @@ def search_venues():
   # take the search term from the form
   search_term = request.form.get('search_term', '')
   # ilike to be insensitive case, and % any leters before or after the search term
-  all_venues = Venue.query.filter(Venue.name.ilike("%" + search_term + "%")).all()
+  venues = Venue.query.filter(Venue.name.ilike("%" + search_term + "%")).all()
   data = []
   count=0
-  for venue in all_venues:
+  for venue in venues:
     # to calc the no. of results
     count+=1
     data.append({
        "id": venue.id,
        "name": venue.name,
-       "num_upcoming_shows": len(Show.query.join(Venue).filter(Show.venue_id==venue.id).filter(Show.start_time>datetime.datetime.now()).all())
+       "num_upcoming_shows": Show.query.filter_by(venue_id=venue.id).filter(Show.start_time>datetime.datetime.now()).all().count()
     })
   # the result of search save here
   response={
@@ -350,7 +351,7 @@ def search_artists():
     data.append({
        "id": artist.id,
        "name": artist.name,
-       "num_upcoming_shows": len(Show.query.join(Artist).filter(Show.artist_id==artist.id).filter(Show.start_time>datetime.datetime.now()).all())
+       "num_upcoming_shows": Show.query.join(Artist).filter(Show.artist_id==artist.id).filter(Show.start_time>datetime.datetime.now()).all().count()
     })
 
   response={

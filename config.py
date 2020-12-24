@@ -9,5 +9,5 @@ DEBUG = True
 # Connect to the database
 
 
-# TODO IMPLEMENT DATABASE URL
-SQLALCHEMY_DATABASE_URI = 'local database url'
+SQLALCHEMY_DATABASE_URI = <your local database>
+SQLALCHEMY_TRACK_MODIFICATIONS = False
