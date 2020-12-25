@@ -5,7 +5,10 @@
 import json
 import dateutil.parser
 import babel
-from flask import Flask, render_template, request, Response, flash, redirect, url_for, abort
+from flask import (
+Flask, render_template, 
+request, Response, flash, 
+redirect, url_for, abort )
 from flask_moment import Moment
 from flask_sqlalchemy import SQLAlchemy
 import logging
@@ -24,8 +27,7 @@ from models import *
 app = Flask(__name__)
 moment = Moment(app)
 app.config.from_object('config')
-db = SQLAlchemy(app)
-migrate = Migrate(app, db)
+db.init_app(app)
 
 #----------------------------------------------------------------------------#
 # Models.
@@ -607,6 +609,10 @@ def create_show_submission():
     # if success, success message pop up
     flash('Show was successfully listed!')
   return render_template('pages/home.html')
+
+@app.errorhandler(401)
+def unauthorized_error(error):
+    return render_template('errors/401.html'), 401
 
 @app.errorhandler(404)
 def not_found_error(error):
